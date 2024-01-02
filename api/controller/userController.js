@@ -10,7 +10,9 @@ export const test = (req, res) => {
 
 export const updateUser = async (req, res, next) => {
   if (req.user.id !== req.params.id)
-    return next(errorHandler(401, "You are not authenticated"));
+    return next(
+      errorHandler(401, "You are not authenticated to perform this action.")
+    );
   try {
     if (req.body.password) {
       req.body.password = bcryptjs.hashSync(req.body.password, 10);
@@ -28,9 +30,22 @@ export const updateUser = async (req, res, next) => {
       },
       { new: true }
     );
-
     const { password, ...userData } = updatedUser._doc;
     res.status(200).json(userData);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteUser = async (req, res, next) => {
+  if (req.user.id !== req.params.id)
+    return next(
+      errorHandler(401, "You are not authenticated to perform this action.")
+    );
+  try {
+    await User.findByIdAndDelete(req.params.id);
+    res.clearCookie("access_token");
+    res.status(200).json("User is now deleted");
   } catch (error) {
     next(error);
   }
