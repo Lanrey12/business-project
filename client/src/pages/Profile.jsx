@@ -20,6 +20,7 @@ export default function Profile() {
   const [filePercentage, setFilePercentage] = useState(0);
   const [fileUploadError, setFileUploadError] = useState(false);
   const [formData, setFormData] = useState({});
+  const [updateSuccess, setUpdateSuccess] = useState(false);
   const dispatch = useDispatch();
 
   const handleSubmit = async (e) => {
@@ -39,6 +40,7 @@ export default function Profile() {
         return;
       }
       dispatch(updateUserSuccess(data));
+      setUpdateSuccess(true)
     } catch (error) {
       dispatch(updateUserfailure(error.message));
     }
@@ -142,6 +144,7 @@ export default function Profile() {
         <span className="text-red-700 cursor-pointer">Sign out</span>
       </div>
       <p className='text-red-700 mt-5'>{error ? error : ''}</p>
+      <p className='text-green-700 mt-5'>{updateSuccess ? "Profile updated successfully": ''}</p>
     </div>
   );
 }
