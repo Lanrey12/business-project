@@ -1,6 +1,7 @@
 import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
+import cookieParser from "cookie-parser";
 import userRouter from "./routes/userRouter.js";
 import authRouter from "./routes/authRouter.js";
 
@@ -16,7 +17,9 @@ mongoose
   });
 
 const app = express();
+
 app.use(express.json());
+app.use(cookieParser())
 
 app.listen(3000, () => {
   console.log("Server is started on port: 3000");
