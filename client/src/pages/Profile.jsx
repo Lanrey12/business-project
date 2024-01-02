@@ -10,11 +10,14 @@ import {
 import { app } from "../firebase";
 import {
   deleteUserSuccess,
-  deleteUserfailure,
+  deleteUserFailure,
   initialDeleteUser,
   initialUpdateUser,
   updateUserSuccess,
-  updateUserfailure,
+  updateUserFailure,
+  initialSignOut,
+  signOutFailure,
+  signOutSuccess,
 } from "../redux/user/userSlice";
 
 export default function Profile() {
@@ -42,13 +45,13 @@ export default function Profile() {
       });
       const data = await response.json();
       if (data.success === false) {
-        dispatch(updateUserfailure(data.message));
+        dispatch(updateUserFailure(data.message));
         return;
       }
       dispatch(updateUserSuccess(data));
       setUpdateSuccess(true);
     } catch (error) {
-      dispatch(updateUserfailure(error.message));
+      dispatch(updateUserFailure(error.message));
     }
   };
 
@@ -60,15 +63,31 @@ export default function Profile() {
       });
       const data = await response.json();
       if (data.success === false) {
-        dispatch(deleteUserfailure(data.message));
+        dispatch(deleteUserFailure(data.message));
         return;
       }
       dispatch(deleteUserSuccess(data));
       navigate("/signin");
     } catch (error) {
-      dispatch(deleteUserfailure(error.message));
+      dispatch(deleteUserFailure(error.message));
     }
   };
+
+  const handleSignOut = async () => {
+    try {
+      dispatch(initialSignOut());
+      const response = await fetch('/api/auth/signout');
+      const data = await response.json();
+      if (data.success === false) {
+        dispatch(signOutFailure(data.message));
+        return;
+      }
+      dispatch(signOutSuccess(data));
+      navigate("/signin");
+    } catch (error) {
+      dispatch(signOutFailure(error.message));
+    }
+  }
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
@@ -173,7 +192,7 @@ export default function Profile() {
         >
           Delete account
         </span>
-        <span className="text-red-700 cursor-pointer">Sign out</span>
+        <span onClick={handleSignOut} className="text-red-700 cursor-pointer">Sign out</span>
       </div>
       <p className="text-red-700 mt-5">{error ? error : ""}</p>
       <p className="text-green-700 mt-5">
