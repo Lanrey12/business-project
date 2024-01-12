@@ -1,4 +1,86 @@
+import {
+  getDownloadURL,
+  getStorage,
+  ref,
+  uploadBytesResumable,
+} from "firebase/storage";
+import { useState } from "react";
+import { app } from "../firebase";
+
 export default function CreateListing() {
+  const [files, setFile] = useState([]);
+  const [formData, setFormData] = useState({
+    imageUrls: [],
+  });
+  const [fileUploadError, setFileUploadError] = useState(false);
+  const [fileUploading, setFileUploading] = useState(false);
+
+
+
+  const handleImageUpload = (e) => {
+    e.preventDefault();
+    if (files.length > 0 && files.length + formData.imageUrls.length < 12) {
+      const promises = [];
+
+      setFileUploadError(false);
+      setFileUploading(true)
+
+      for (let image of files) {
+        promises.push(storeImage(image));
+      }
+      Promise.all(promises)
+        .then((urls) => {
+          setFormData({
+            ...formData,
+            imageUrls: formData.imageUrls.concat(urls),
+          });
+          setFileUploadError(false);
+          setFileUploading(false)
+        })
+        .catch((error) => {
+          setFileUploadError("Image upload unsuccessful");
+          setFileUploading(false)
+        });
+    } else {
+      setFileUploadError("Only 12 images alllowed per listing");
+      setFileUploading(false)
+    }
+  };
+
+  const storeImage = async (file) => {
+    return new Promise((resolve, reject) => {
+      const storage = getStorage(app);
+
+      // the line below is to make the file name unique as you might have a repeat upload of the same image
+      const fileName = new Date().getTime() + file.name;
+      const storageRef = ref(storage, fileName);
+      const uploadTask = uploadBytesResumable(storageRef, file);
+
+      uploadTask.on(
+        "state_changed",
+        (snapshot) => {
+          const progress =
+            (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          console.log(progress);
+        },
+        (error) => {
+          reject(error);
+        },
+        () => {
+          getDownloadURL(uploadTask.snapshot.ref).then((downloadUrl) => {
+            resolve(downloadUrl);
+          });
+        }
+      );
+    });
+  };
+
+  const handleRemoveImage = (index) => {
+    setFormData({
+        ...formData,
+        imageUrls: formData.imageUrls.filter(( _, urlIndex) => urlIndex !== index)
+    })
+  }
   return (
     <main className="p-3 max-w-4xl mx-auto">
       <h1 className="text-3xl font-semibold text-center my-7">
@@ -109,19 +191,49 @@ export default function CreateListing() {
           <p className="font-semibold">
             Images:
             <span className="font-normal text-gray-600 ml-2">
-              The first image will be the cover (max 6)
+              The first image will be the cover (max 12)
             </span>
           </p>
           <div className="flex gap-4">
-            <input className="p-3 border border-gray-300 rounded w-full" type="file" id="images" accept="images/*" multiple />
-            <button className="p-3 text-green-700 border border-green-700 rounded uppercase hover:shadow-lg disabled:opacity-80">Upload</button>
+            <input
+              onChange={(e) => setFile(e.target.files)}
+              className="p-3 border border-gray-300 rounded w-full"
+              type="file"
+              id="images"
+              accept="images/*"
+              multiple
+            />
+            <button
+              type="button"
+              onClick={handleImageUpload}
+              className="p-3 text-green-700 border border-green-700 rounded uppercase hover:shadow-lg disabled:opacity-80"
+            >
+              { fileUploading ? 'Uploading...' : 'Upload'}
+            </button>
           </div>
-          <button 
-          className="bg-slate-700 text-white p-3 rounded-lg uppercase hover:opacity-95 disabled:opacity-80"
-        >
+          <p className="text-red-700 text-sm">
+            {fileUploadError && fileUploadError}
+          </p>
+          {formData.imageUrls.length > 0 &&
+            formData.imageUrls.map((url, index) => (
+              <div className=" flex justify-between p-3 border rounded-md items-center" key={url}>
+                <img
+                  src={url}
+                  alt="img listing"
+                  className="w-20 h-20 object-contain rounded-lg"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleRemoveImage(index)}
+                  className="p-3 text-red-700 rounded-lg uppercase hover:opacity-75"
+                > Delete
+                </button>
+              </div>
+            ))}
+          <button className="bg-slate-700 text-white p-3 rounded-lg uppercase hover:opacity-95 disabled:opacity-80">
             Create Listing
-        </button>
-        </div>     
+          </button>
+        </div>
       </form>
     </main>
   );
